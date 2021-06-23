@@ -33,6 +33,7 @@ import static io.vertx.core.http.HttpHeaders.CONTENT_TYPE;
 
 public class RestApplication extends AbstractVerticle {
 
+  private static final String PUBLIC_KEY = System.getenv("REALM_PUBLIC_KEY");
   private final Logger log = LoggerFactory.getLogger(RestApplication.class);
   private long counter;
 
@@ -50,14 +51,25 @@ public class RestApplication extends AbstractVerticle {
       .put("credentials", new JsonObject()
         .put("secret", System.getenv("SECRET")));
 
-    JsonObject config = new JsonObject()
-      // since we're consuming keycloak JWTs we need
-      // to locate the permission claims in the token
-      .put("permissionsClaimKey", "realm_access/roles");
-    JWTAuthHandler jwtAuthHandler =
-      JWTAuthHandler.create(JWTAuth.create(vertx, new JWTAuthOptions(config).addPubSecKey(new PubSecKeyOptions().setAlgorithm("RS256").setBuffer(System.getenv("REALM_PUBLIC_KEY")))));
     // Configure the AuthHandler to process JWT's
-    router.route("/api/greeting").handler(jwtAuthHandler);
+    router.route("/api/greeting").handler(JWTAuthHandler.create(
+      JWTAuth.create(vertx, new JWTAuthOptions()
+        .addPubSecKey(new PubSecKeyOptions()
+                        .setAlgorithm("RS256")
+                        .setPublicKey(PUBLIC_KEY))
+        // since we're consuming keycloak JWTs we need to locate the permission claims in the token
+        .setPermissionsClaimKey("realm_access/roles"))));
+
+    System.out.println("PUBLIC_KEY = " + PUBLIC_KEY);
+//    JsonObject config = new JsonObject()
+//      // since we're consuming keycloak JWTs we need
+//      // to locate the permission claims in the token
+//      .put("permissionsClaimKey", "realm_access/roles");
+//    JWTAuthHandler jwtAuthHandler =
+//      JWTAuthHandler.create(JWTAuth.create(vertx,
+//                                           new JWTAuthOptions(config).addPubSecKey(new PubSecKeyOptions().setAlgorithm("RS256").setBuffer(PUBLIC_KEY))));
+//    // Configure the AuthHandler to process JWT's
+//    router.route("/api/greeting").handler(jwtAuthHandler);
 
     // This is how one can do RBAC, e.g.: only admin is allowed
     router.get("/api/greeting").handler(ctx ->

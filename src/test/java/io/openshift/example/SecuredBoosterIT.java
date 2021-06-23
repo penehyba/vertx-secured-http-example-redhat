@@ -19,7 +19,7 @@ package io.openshift.example;
 import org.arquillian.cube.kubernetes.impl.utils.CommandExecutor;
 import org.arquillian.cube.openshift.impl.enricher.AwaitRoute;
 import org.arquillian.cube.openshift.impl.enricher.RouteURL;
-import org.arquillian.spacelift.execution.ExecutionException; 
+import org.arquillian.spacelift.execution.ExecutionException;
 import org.jboss.arquillian.junit.Arquillian;
 import org.junit.*;
 import org.junit.runner.RunWith;
@@ -83,6 +83,7 @@ public class SecuredBoosterIT {
 
   @Test
   public void defaultUser_defaultFrom() {
+    System.out.println(System.getenv("REALM_PUBLIC_KEY"));
     String token = getToken("alice", "password");
 
     given().header("Authorization", "Bearer " + token)
@@ -92,6 +93,7 @@ public class SecuredBoosterIT {
 
   @Test
   public void defaultUser_customFrom() {
+    System.out.println(System.getenv("REALM_PUBLIC_KEY"));
     String token = getToken("alice", "password");
 
     given().header("Authorization", "Bearer " + token)
@@ -101,6 +103,7 @@ public class SecuredBoosterIT {
 
   @Test
   public void adminUser() {
+    System.out.println(System.getenv("REALM_PUBLIC_KEY"));
     String token = getToken("admin", "admin");
 
     given().header("Authorization", "Bearer " + token)
@@ -110,6 +113,7 @@ public class SecuredBoosterIT {
 
   @Test
   public void badPassword() {
+    System.out.println(System.getenv("REALM_PUBLIC_KEY"));
     String token = getToken("alice", "bad");
 
     given().header("Authorization", "Bearer " + token)
