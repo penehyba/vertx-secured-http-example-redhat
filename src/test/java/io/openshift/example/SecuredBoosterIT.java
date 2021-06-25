@@ -93,7 +93,6 @@ public class SecuredBoosterIT {
 
   @Test
   public void defaultUser_customFrom() {
-    System.out.println(System.getenv("REALM_PUBLIC_KEY"));
     String token = getToken("alice", "password");
 
     given().header("Authorization", "Bearer " + token)
@@ -103,7 +102,6 @@ public class SecuredBoosterIT {
 
   @Test
   public void adminUser() {
-    System.out.println(System.getenv("REALM_PUBLIC_KEY"));
     String token = getToken("admin", "admin");
 
     given().header("Authorization", "Bearer " + token)
@@ -113,7 +111,6 @@ public class SecuredBoosterIT {
 
   @Test
   public void badPassword() {
-    System.out.println(System.getenv("REALM_PUBLIC_KEY"));
     String token = getToken("alice", "bad");
 
     given().header("Authorization", "Bearer " + token)
@@ -157,6 +154,7 @@ public class SecuredBoosterIT {
     return given()
       .relaxedHTTPSValidation()
       .params(requestParams)
+      .expect().statusCode(password.equals("bad") ? 401 : 200)
       .when()
       .post(ssoEndpoint + "/realms/master/protocol/openid-connect/token")
       .path("access_token");

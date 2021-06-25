@@ -22,8 +22,11 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.auth.PubSecKeyOptions;
+import io.vertx.ext.auth.authorization.AuthorizationProvider;
+import io.vertx.ext.auth.authorization.PermissionBasedAuthorization;
 import io.vertx.ext.auth.jwt.JWTAuth;
 import io.vertx.ext.auth.jwt.JWTAuthOptions;
+import io.vertx.ext.auth.jwt.authorization.MicroProfileAuthorization;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.JWTAuthHandler;
 import io.vertx.ext.web.handler.StaticHandler;
@@ -34,7 +37,7 @@ import static io.vertx.core.http.HttpHeaders.CONTENT_TYPE;
 public class RestApplication extends AbstractVerticle {
 
   private static final String PUBLIC_KEY = System.getenv("REALM_PUBLIC_KEY");
-  private final Logger log = LoggerFactory.getLogger(RestApplication.class);
+
   private long counter;
 
   @Override
@@ -45,6 +48,7 @@ public class RestApplication extends AbstractVerticle {
 
     JsonObject keycloakJson = new JsonObject()
       .put("realm", System.getenv("REALM"))
+      .put("realm-public-key", System.getenv("REALM_PUBLIC_KEY"))
       .put("auth-server-url", System.getenv("SSO_AUTH_SERVER_URL"))
       .put("ssl-required", "external")
       .put("resource", System.getenv("CLIENT_ID"))
@@ -52,38 +56,40 @@ public class RestApplication extends AbstractVerticle {
         .put("secret", System.getenv("SECRET")));
 
     // Configure the AuthHandler to process JWT's
-    router.route("/api/greeting").handler(JWTAuthHandler.create(
-      JWTAuth.create(vertx, new JWTAuthOptions()
-        .addPubSecKey(new PubSecKeyOptions()
-                        .setAlgorithm("RS256")
-                        .setPublicKey(PUBLIC_KEY))
-        // since we're consuming keycloak JWTs we need to locate the permission claims in the token
-        .setPermissionsClaimKey("realm_access/roles"))));
-
     System.out.println("PUBLIC_KEY = " + PUBLIC_KEY);
-//    JsonObject config = new JsonObject()
-//      // since we're consuming keycloak JWTs we need
-//      // to locate the permission claims in the token
-//      .put("permissionsClaimKey", "realm_access/roles");
-//    JWTAuthHandler jwtAuthHandler =
-//      JWTAuthHandler.create(JWTAuth.create(vertx,
-//                                           new JWTAuthOptions(config).addPubSecKey(new PubSecKeyOptions().setAlgorithm("RS256").setBuffer(PUBLIC_KEY))));
-//    // Configure the AuthHandler to process JWT's
-//    router.route("/api/greeting").handler(jwtAuthHandler);
+    JsonObject config = new JsonObject()
+      .put("realm-public-key", "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoETnPmN55xBJjRzN/cs30OzJ9olkteLVNRjzdTxFOyRtS2ovDfzdhhO9XzUcTMbIsCOAZtSt8K+6yvBXypOSYvI75EUdypmkcK1KoptqY5KEBQ1KwhWuP7IWQ0fshUwD6jI1QWDfGxfM/h34FvEn/0tJ71xN2P8TI2YanwuDZgosdobx/PAvlGREBGuk4BgmexTOkAdnFxIUQcCkiEZ2C41uCrxiS4CEe5OX91aK9HKZV4ZJX6vnqMHmdDnsMdO+UFtxOBYZio+a1jP4W3d7J5fGeiOaXjQCOpivKnP2yU2DPdWmDMyVb67l8DRA+jh0OJFKZ5H2fNgE3II59vdsRwIDAQAB")
+      // since we're consuming keycloak JWTs we need
+      // to locate the permission claims in the token
+      .put("permissionsClaimKey", "realm_access/roles");
+    JWTAuth authProvider = JWTAuth.create(vertx,
+//       new JWTAuthOptions(config).addPubSecKey(new PubSecKeyOptions().setAlgorithm("RS256").setBuffer(PUBLIC_KEY)));
+       new JWTAuthOptions(config).addPubSecKey(new PubSecKeyOptions().setAlgorithm("RS256")
+//                                   new JWTAuthOptions(config));//.addPubSecKey(new PubSecKeyOptions().setAlgorithm("RS256")
+                                                                             .setBuffer("-----BEGIN CERTIFICATE-----\n" +
+                                                                                        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoETnPmN55xBJjRzN/cs30OzJ9olkteLVNRjzdTxFOyRtS2ovDfzdhhO9XzUcTMbIsCOAZtSt8K+6yvBXypOSYvI75EUdypmkcK1KoptqY5KEBQ1KwhWuP7IWQ0fshUwD6jI1QWDfGxfM/h34FvEn/0tJ71xN2P8TI2YanwuDZgosdobx/PAvlGREBGuk4BgmexTOkAdnFxIUQcCkiEZ2C41uCrxiS4CEe5OX91aK9HKZV4ZJX6vnqMHmdDnsMdO+UFtxOBYZio+a1jP4W3d7J5fGeiOaXjQCOpivKnP2yU2DPdWmDMyVb67l8DRA+jh0OJFKZ5H2fNgE3II59vdsRwIDAQAB\n" +
+                                                                                        "-----END CERTIFICATE-----"
+                                                                             )));
+
+    // Configure the AuthHandler to process JWT's
+    router.route("/api/greeting").handler(JWTAuthHandler.create(authProvider));
 
     // This is how one can do RBAC, e.g.: only admin is allowed
-    router.get("/api/greeting").handler(ctx ->
-      ctx.user().isAuthorized("booster-admin", authz -> {
-        if (authz.succeeded() && authz.result()) {
+    router.get("/api/greeting").handler(ctx -> {
+      AuthorizationProvider authorizationProvider = MicroProfileAuthorization.create();
+      authorizationProvider.getAuthorizations(ctx.user(), voidAsyncResult -> {
+        if(voidAsyncResult.succeeded() & PermissionBasedAuthorization.create("booster-admin").match(ctx.user())) {
           ctx.next();
         } else {
-          log.error("AuthZ failed!");
+          System.err.println("AuthZ failed for JWT!");
           ctx.fail(403);
         }
-      }));
+      });
+    });
 
     router.get("/api/greeting").handler(ctx -> {
       String name = ctx.request().getParam("name");
+      System.out.println("NAME = " + name);
       if (name == null) {
         name = "World";
       }

@@ -29,8 +29,8 @@
   <description>Secured Vertx - HTTP &amp; Red Hat SSO</description>
 
   <properties>
-    <vertx.version>3.9.6.redhat-00001</vertx.version>
-<!--    <vertx.version>4.1.0.redhat-00004</vertx.version>-->
+<!--    <vertx.version>3.9.6.redhat-00001</vertx.version>-->
+    <vertx.version>4.1.0.redhat-00004</vertx.version>
     <release.candidate.repository>
       http://indy.psi.redhat.com/api/content/maven/group/static
     </release.candidate.repository>
@@ -226,9 +226,9 @@
             </executions>
             <configuration>
               <enricher>
-<!--                <excludes>-->
-<!--                  <exclude>jkube-maven-scm</exclude>-->
-<!--                </excludes>-->
+                <excludes>
+                  <exclude>jkube-maven-scm</exclude>
+                </excludes>
                 <config>
                   <jkube-healthcheck-vertx>
                     <path>/health</path>
