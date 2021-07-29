@@ -22,6 +22,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.auth.PubSecKeyOptions;
+import io.vertx.ext.auth.authentication.AuthenticationProvider;
 import io.vertx.ext.auth.authorization.AuthorizationProvider;
 import io.vertx.ext.auth.authorization.PermissionBasedAuthorization;
 import io.vertx.ext.auth.jwt.JWTAuth;
@@ -57,22 +58,26 @@ public class RestApplication extends AbstractVerticle {
 
     // Configure the AuthHandler to process JWT's
     System.out.println("PUBLIC_KEY = " + PUBLIC_KEY);
+    System.out.println("System.getenv(\"REALM_PUBLIC_KEY\"): " + System.getenv("REALM_PUBLIC_KEY"));
     JsonObject config = new JsonObject()
       .put("realm-public-key", "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoETnPmN55xBJjRzN/cs30OzJ9olkteLVNRjzdTxFOyRtS2ovDfzdhhO9XzUcTMbIsCOAZtSt8K+6yvBXypOSYvI75EUdypmkcK1KoptqY5KEBQ1KwhWuP7IWQ0fshUwD6jI1QWDfGxfM/h34FvEn/0tJ71xN2P8TI2YanwuDZgosdobx/PAvlGREBGuk4BgmexTOkAdnFxIUQcCkiEZ2C41uCrxiS4CEe5OX91aK9HKZV4ZJX6vnqMHmdDnsMdO+UFtxOBYZio+a1jP4W3d7J5fGeiOaXjQCOpivKnP2yU2DPdWmDMyVb67l8DRA+jh0OJFKZ5H2fNgE3II59vdsRwIDAQAB")
       // since we're consuming keycloak JWTs we need
       // to locate the permission claims in the token
       .put("permissionsClaimKey", "realm_access/roles");
-    JWTAuth authProvider = JWTAuth.create(vertx,
-//       new JWTAuthOptions(config).addPubSecKey(new PubSecKeyOptions().setAlgorithm("RS256").setBuffer(PUBLIC_KEY)));
-       new JWTAuthOptions(config).addPubSecKey(new PubSecKeyOptions().setAlgorithm("RS256")
-//                                   new JWTAuthOptions(config));//.addPubSecKey(new PubSecKeyOptions().setAlgorithm("RS256")
-                                                                             .setBuffer("-----BEGIN CERTIFICATE-----\n" +
-                                                                                        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoETnPmN55xBJjRzN/cs30OzJ9olkteLVNRjzdTxFOyRtS2ovDfzdhhO9XzUcTMbIsCOAZtSt8K+6yvBXypOSYvI75EUdypmkcK1KoptqY5KEBQ1KwhWuP7IWQ0fshUwD6jI1QWDfGxfM/h34FvEn/0tJ71xN2P8TI2YanwuDZgosdobx/PAvlGREBGuk4BgmexTOkAdnFxIUQcCkiEZ2C41uCrxiS4CEe5OX91aK9HKZV4ZJX6vnqMHmdDnsMdO+UFtxOBYZio+a1jP4W3d7J5fGeiOaXjQCOpivKnP2yU2DPdWmDMyVb67l8DRA+jh0OJFKZ5H2fNgE3II59vdsRwIDAQAB\n" +
-                                                                                        "-----END CERTIFICATE-----"
-                                                                             )));
+    JWTAuth provider =
+      JWTAuth.create(vertx, new JWTAuthOptions(config));
+     //
+//    JWTAuthOptions options = new JWTAuthOptions();
+//    options.addPubSecKey(new PubSecKeyOptions().setAlgorithm("RS256")
+//                           .setBuffer("-----BEGIN CERTIFICATE-----\n" +
+//                                        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoETnPmN55xBJjRzN/cs30OzJ9olkteLVNRjzdTxFOyRtS2ovDfzdhhO9XzUcTMbIsCOAZtSt8K+6yvBXypOSYvI75EUdypmkcK1KoptqY5KEBQ1KwhWuP7IWQ0fshUwD6jI1QWDfGxfM/h34FvEn/0tJ71xN2P8TI2YanwuDZgosdobx/PAvlGREBGuk4BgmexTOkAdnFxIUQcCkiEZ2C41uCrxiS4CEe5OX91aK9HKZV4ZJX6vnqMHmdDnsMdO+UFtxOBYZio+a1jP4W3d7J5fGeiOaXjQCOpivKnP2yU2DPdWmDMyVb67l8DRA+jh0OJFKZ5H2fNgE3II59vdsRwIDAQAB\n" +
+//                                        "-----END CERTIFICATE-----"
+//                           ));
+//    JWTAuth authProvider = JWTAuth.create(vertx, options);
 
     // Configure the AuthHandler to process JWT's
-    router.route("/api/greeting").handler(JWTAuthHandler.create(authProvider));
+//    router.route("/api/greeting").handler(JWTAuthHandler.create(authProvider));
+    router.route("/api/greeting").handler(JWTAuthHandler.create(provider));
 
     // This is how one can do RBAC, e.g.: only admin is allowed
     router.get("/api/greeting").handler(ctx -> {
