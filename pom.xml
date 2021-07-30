@@ -29,8 +29,8 @@
   <description>Secured Vertx - HTTP &amp; Red Hat SSO</description>
 
   <properties>
-    <vertx.version>3.9.6.redhat-00001</vertx.version>
-<!--    <vertx.version>4.1.0.redhat-00004</vertx.version>-->
+<!--    <vertx.version>3.9.6.redhat-00001</vertx.version>-->
+    <vertx.version>4.1.0.redhat-00004</vertx.version>
     <release.candidate.repository>
       http://indy.psi.redhat.com/api/content/maven/group/static
     </release.candidate.repository>
@@ -150,6 +150,10 @@
       <groupId>io.vertx</groupId>
       <artifactId>vertx-web</artifactId>
     </dependency>
+<!--    <dependency>-->
+<!--      <groupId>io.vertx</groupId>-->
+<!--      <artifactId>vertx-auth-oauth2</artifactId>-->
+<!--    </dependency>-->
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-auth-jwt</artifactId>
@@ -201,6 +205,12 @@
       <groupId>org.arquillian.cube</groupId>
       <artifactId>arquillian-cube-openshift-starter</artifactId>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.8.0</version>
+      <scope>compile</scope>
     </dependency>
   </dependencies>
 

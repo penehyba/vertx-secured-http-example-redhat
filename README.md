@@ -1,4 +1,4 @@
-<https://appdev.openshift.io/docs/vertx-runtime.html#mission-rest-http-secured-vertx>
+<https://appdev.openshift.io/docs/vertx-runtime.html#example-rest-http-secured-vertx>
 
 ### Deployment with the JKube OpenShift Maven Plugin
 

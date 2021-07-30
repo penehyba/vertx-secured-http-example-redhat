@@ -83,7 +83,7 @@ public class SecuredBoosterIT {
 
   @Test
   public void defaultUser_defaultFrom() {
-    System.out.println(System.getenv("REALM_PUBLIC_KEY"));
+    System.out.println("System.getenv(\"REALM_PUBLIC_KEY\"):" +System.getenv("REALM_PUBLIC_KEY"));
     String token = getToken("alice", "password");
 
     given().header("Authorization", "Bearer " + token)
@@ -93,7 +93,7 @@ public class SecuredBoosterIT {
 
   @Test
   public void defaultUser_customFrom() {
-    System.out.println(System.getenv("REALM_PUBLIC_KEY"));
+    System.out.println("System.getenv(\"REALM_PUBLIC_KEY\"):" +System.getenv("REALM_PUBLIC_KEY"));
     String token = getToken("alice", "password");
 
     given().header("Authorization", "Bearer " + token)
@@ -103,7 +103,7 @@ public class SecuredBoosterIT {
 
   @Test
   public void adminUser() {
-    System.out.println(System.getenv("REALM_PUBLIC_KEY"));
+    System.out.println("System.getenv(\"REALM_PUBLIC_KEY\"):" +System.getenv("REALM_PUBLIC_KEY"));
     String token = getToken("admin", "admin");
 
     given().header("Authorization", "Bearer " + token)
@@ -113,7 +113,7 @@ public class SecuredBoosterIT {
 
   @Test
   public void badPassword() {
-    System.out.println(System.getenv("REALM_PUBLIC_KEY"));
+    System.out.println("System.getenv(\"REALM_PUBLIC_KEY\"):" +System.getenv("REALM_PUBLIC_KEY"));
     String token = getToken("alice", "bad");
 
     given().header("Authorization", "Bearer " + token)
