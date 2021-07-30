@@ -54,7 +54,7 @@ public class RestApplication extends AbstractVerticle {
       try {
         PUBLIC_KEY = IOUtils.toString(Paths.get("target", "test-classes", "public.pem").toFile().toURI(), Charset.defaultCharset());
       } catch (IOException e) {
-        System.err.println("Unable to load PUBLIC_KEY from pem file!");
+        System.err.println("Unable to load PUBLIC_KEY from PEM file!");
       }
     }
   }
