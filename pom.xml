@@ -23,7 +23,7 @@
   <groupId>io.openshift.example</groupId>
   <artifactId>secured-vertx-http</artifactId>
   <packaging>jar</packaging>
-  <version>35-SNAPSHOT</version>
+  <version>36-SNAPSHOT</version>
 
   <name>Vert.x - Secured HTTP endpoint</name>
   <description>Secured Vertx - HTTP &amp; Red Hat SSO</description>
@@ -42,7 +42,8 @@
     <maven.compiler.target>1.8</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <jkube.generator.from>registry.access.redhat.com/ubi8/openjdk-11</jkube.generator.from>
+<!--    <jkube.generator.from>registry.access.redhat.com/ubi8/openjdk-11</jkube.generator.from>-->
+    <jkube.generator.from>registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift</jkube.generator.from>
   </properties>
 
   <build>
@@ -222,7 +223,7 @@
             <version>${jkube.version}</version>
             <executions>
               <execution>
-                <id>jkube</id>
+                <id>omp</id>
                 <goals>
                   <goal>resource</goal>
                   <goal>build</goal>
