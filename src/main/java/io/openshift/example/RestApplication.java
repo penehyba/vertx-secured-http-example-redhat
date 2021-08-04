@@ -17,13 +17,14 @@
 package io.openshift.example;
 
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.auth.PubSecKeyOptions;
+//import io.vertx.ext.auth.authorization.AuthorizationProvider;
+//import io.vertx.ext.auth.authorization.PermissionBasedAuthorization;
 import io.vertx.ext.auth.jwt.JWTAuth;
 import io.vertx.ext.auth.jwt.JWTAuthOptions;
+//import io.vertx.ext.auth.jwt.authorization.MicroProfileAuthorization;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.JWTAuthHandler;
 import io.vertx.ext.web.handler.StaticHandler;
@@ -32,15 +33,16 @@ import io.openshift.example.service.Greeting;
 import static io.vertx.core.http.HttpHeaders.CONTENT_TYPE;
 
 public class RestApplication extends AbstractVerticle {
-
-  private final Logger log = LoggerFactory.getLogger(RestApplication.class);
+  private static String PUBLIC_KEY;// = System.getenv("REALM_PUBLIC_KEY");
   private long counter;
 
   @Override
-  public void start(Future<Void> done) {
+  public void start(Promise<Void> done) {
+    loadPublicKey();
     // Create a router object.
     Router router = Router.router(vertx);
-    router.get("/health").handler(rc -> rc.response().end("OK"));
+    router.get("/health").handler(rc -> rc.response().setStatusCode(200).end("OK"));
+    router.get().handler(StaticHandler.create());
 
     JsonObject keycloakJson = new JsonObject()
       .put("realm", System.getenv("REALM"))
@@ -50,25 +52,35 @@ public class RestApplication extends AbstractVerticle {
       .put("credentials", new JsonObject()
         .put("secret", System.getenv("SECRET")));
 
+    JsonObject config = new JsonObject()
+      // since we're consuming keycloak JWTs we need
+      // to locate the permission claims in the token
+      .put("permissionsClaimKey", "realm_access/roles");
     // Configure the AuthHandler to process JWT's
     router.route("/api/greeting").handler(JWTAuthHandler.create(
+//      JWTAuth.create(vertx, new JWTAuthOptions(config)
       JWTAuth.create(vertx, new JWTAuthOptions()
         .addPubSecKey(new PubSecKeyOptions()
           .setAlgorithm("RS256")
+//                        .setBuffer(PUBLIC_KEY)))));
           .setPublicKey(System.getenv("REALM_PUBLIC_KEY")))
         // since we're consuming keycloak JWTs we need to locate the permission claims in the token
         .setPermissionsClaimKey("realm_access/roles"))));
 
     // This is how one can do RBAC, e.g.: only admin is allowed
-    router.get("/api/greeting").handler(ctx ->
+    router.get("/api/greeting").handler(ctx -> {
+//      AuthorizationProvider authorizationProvider = MicroProfileAuthorization.create();
+//      authorizationProvider.getAuthorizations(ctx.user(), voidAsyncResult -> {
+//        if(voidAsyncResult.succeeded() & PermissionBasedAuthorization.create("booster-admin").match(ctx.user())) {
       ctx.user().isAuthorized("booster-admin", authz -> {
         if (authz.succeeded() && authz.result()) {
           ctx.next();
         } else {
-          log.error("AuthZ failed!");
+          System.err.println("AuthZ failed!");
           ctx.fail(403);
         }
-      }));
+      });
+    });
 
     router.get("/api/greeting").handler(ctx -> {
       String name = ctx.request().getParam("name");
@@ -99,5 +111,21 @@ public class RestApplication extends AbstractVerticle {
         // default to 8080.
         config().getInteger("http.port", 8080),
         ar -> done.handle(ar.mapEmpty()));
+  }
+
+  public static void loadPublicKey() {
+    PUBLIC_KEY = System.getenv("REALM_PUBLIC_KEY");
+    if (PUBLIC_KEY == null) {
+      System.err.println("PUBLIC_KEY loaded from REALM_PUBLIC_KEY is null, reading PEM file.");
+//      try {
+//        PUBLIC_KEY = IOUtils.toString(Paths.get("target", "test-classes", "public.pem").toFile().toURI(), Charset.defaultCharset());
+//        PUBLIC_KEY = IOUtils.toString(Paths.get("src","test","resources", "public.pem").toFile().toURI(), Charset.defaultCharset());
+        PUBLIC_KEY = "-----BEGIN CERTIFICATE-----\n" +
+          "MIICmzCCAYMCBgFav/9NbDANBgkqhkiG9w0BAQsFADARMQ8wDQYDVQQDDAZtYXN0ZXIwHhcNMTcwMzEyMDA0OTI0WhcNMjcwMzEyMDA1MTA0WjARMQ8wDQYDVQQDDAZtYXN0ZXIwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCgROc+Y3nnEEmNHM39yzfQ7Mn2iWS14tU1GPN1PEU7JG1Lai8N/N2GE71fNRxMxsiwI4Bm1K3wr7rK8FfKk5Ji8jvkRR3KmaRwrUqim2pjkoQFDUrCFa4/shZDR+yFTAPqMjVBYN8bF8z+HfgW8Sf/S0nvXE3Y/xMjZhqfC4NmCix2hvH88C+UZEQEa6TgGCZ7FM6QB2cXEhRBwKSIRnYLjW4KvGJLgIR7k5f3Vor0cplXhklfq+eoweZ0Oewx075QW3E4FhmKj5rWM/hbd3snl8Z6I5peNAI6mK8qc/bJTYM91aYMzJVvruXwNED6OHQ4kUpnkfZ82ATcgjn292xHAgMBAAEwDQYJKoZIhvcNAQELBQADggEBAA+RuEoZiOQGfYfXVT3dE6Th3INnR3nStNuP5AQv/cNyDBwC5yLUdBABDOUaPSb6OWIY8pxGs457Fct0gzQsPuE99Zk3GDfRNOqkMA952O4Gh+Hc27NbzYfLmhPyTSTe1oKBxoYmsmBw57Vix+rOKbhLAHyVh5QXl4hhbtruLdqP6EMwL11eWykBCJ1b7gCuYjCGKpYbLKpStg2xXo9rPTd3NmmPYnpCYNrEwl76P++a4w9IcsUn2EmBu0P3njYgtxWucTq9LD5I0h4uoknZEirERkX11SjQnTzanpq8nKphRV0RdGnWWSEN438Hl1XR4zrSRlClFlN3McF4C4U4MVE=\n" +
+          "-----END CERTIFICATE-----";
+//      } catch (IOException e) {
+//        System.err.println("Unable to load PUBLIC_KEY from PEM file!");
+//      }
+    }
   }
 }

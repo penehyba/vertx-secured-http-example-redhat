@@ -16,10 +16,11 @@
  */
 package io.openshift.example;
 
+import org.apache.commons.io.IOUtils;
 import org.arquillian.cube.kubernetes.impl.utils.CommandExecutor;
 import org.arquillian.cube.openshift.impl.enricher.AwaitRoute;
 import org.arquillian.cube.openshift.impl.enricher.RouteURL;
-import org.arquillian.spacelift.execution.ExecutionException; 
+import org.arquillian.spacelift.execution.ExecutionException;
 import org.jboss.arquillian.junit.Arquillian;
 import org.junit.*;
 import org.junit.runner.RunWith;
@@ -27,6 +28,8 @@ import org.junit.runner.RunWith;
 import java.io.*;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -67,7 +70,7 @@ public class SecuredBoosterIT {
       .execCommand("oc get route secure-sso -o jsonpath='{\"https://\"}{.spec.host}{\"/auth\"}'")
       .get(0)
       .replace("'", ""); // for some reason, the string contains a single ' before the URL
-
+    System.out.println("ssoEndpoint is: " + ssoEndpoint);
     /* Await the sso server to be ready so we can make token requests. We cannot use @AwaitRoute as we are deploying
     the sso server as part of the tests.
     When making requests too early (the sso server is not ready yet), it throws SSLHandshakeException,
@@ -83,6 +86,7 @@ public class SecuredBoosterIT {
 
   @Test
   public void defaultUser_defaultFrom() {
+    System.out.println("ssoEndpoint: " + ssoEndpoint);
     String token = getToken("alice", "password");
 
     given().header("Authorization", "Bearer " + token)
@@ -92,6 +96,7 @@ public class SecuredBoosterIT {
 
   @Test
   public void defaultUser_customFrom() {
+    System.out.println("ssoEndpoint: " + ssoEndpoint);
     String token = getToken("alice", "password");
 
     given().header("Authorization", "Bearer " + token)
@@ -101,6 +106,7 @@ public class SecuredBoosterIT {
 
   @Test
   public void adminUser() {
+    System.out.println("ssoEndpoint: " + ssoEndpoint);
     String token = getToken("admin", "admin");
 
     given().header("Authorization", "Bearer " + token)
@@ -110,6 +116,7 @@ public class SecuredBoosterIT {
 
   @Test
   public void badPassword() {
+    System.out.println("ssoEndpoint: " + ssoEndpoint);
     String token = getToken("alice", "bad");
 
     given().header("Authorization", "Bearer " + token)

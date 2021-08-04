@@ -15,3 +15,5 @@ spec:
           value: demoapp
         - name: SECRET
           value: 1daa57a2-b60e-468b-a3ac-25bd2dc2eadc
+#        - name: JAVA_OPTIONS
+#          value: "-Dsso.auth.server.url=${SSO_AUTH_SERVER_URL} -Dvertx.disableFileCPResolving=true"
