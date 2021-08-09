@@ -16,28 +16,50 @@
  */
 package io.openshift.example;
 
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Paths;
+
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+//import io.vertx.core.logging.Logger;
+//import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.auth.PubSecKeyOptions;
+//import io.vertx.ext.auth.authorization.AuthorizationProvider;
+//import io.vertx.ext.auth.authorization.PermissionBasedAuthorization;
 import io.vertx.ext.auth.jwt.JWTAuth;
 import io.vertx.ext.auth.jwt.JWTAuthOptions;
+//import io.vertx.ext.auth.jwt.authorization.MicroProfileAuthorization;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.JWTAuthHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 import io.openshift.example.service.Greeting;
+import org.apache.commons.io.IOUtils;
 
 import static io.vertx.core.http.HttpHeaders.CONTENT_TYPE;
 
 public class RestApplication extends AbstractVerticle {
 
-  private final Logger log = LoggerFactory.getLogger(RestApplication.class);
+//  private final Logger log = LoggerFactory.getLogger(RestApplication.class);
+  private static String PUBLIC_KEY;
   private long counter;
 
+  public static void loadPublicKey() {
+    PUBLIC_KEY = System.getenv("REALM_PUBLIC_KEY");
+    if (PUBLIC_KEY == null) {
+      System.err.println("PUBLIC_KEY loaded from REALM_PUBLIC_KEY is null, reading PEM file.");
+      try {
+        PUBLIC_KEY = IOUtils.toString(Paths.get("target", "test-classes", "public.pem").toFile().toURI(), Charset.defaultCharset());
+      } catch (IOException e) {
+        System.err.println("Unable to load PUBLIC_KEY from PEM file!");
+      }
+    }
+  }
+
   @Override
-  public void start(Future<Void> done) {
+  public void start(Promise<Void> done) {
+    loadPublicKey();
     // Create a router object.
     Router router = Router.router(vertx);
     router.get("/health").handler(rc -> rc.response().end("OK"));
@@ -50,25 +72,46 @@ public class RestApplication extends AbstractVerticle {
       .put("credentials", new JsonObject()
         .put("secret", System.getenv("SECRET")));
 
+    JsonObject config = new JsonObject()
+      // since we're consuming keycloak JWTs we need
+      // to locate the permission claims in the token
+      .put("permissionsClaimKey", "realm_access/roles");
     // Configure the AuthHandler to process JWT's
     router.route("/api/greeting").handler(JWTAuthHandler.create(
-      JWTAuth.create(vertx, new JWTAuthOptions()
+      JWTAuth.create(vertx, new JWTAuthOptions(config)
         .addPubSecKey(new PubSecKeyOptions()
-          .setAlgorithm("RS256")
-          .setPublicKey(System.getenv("REALM_PUBLIC_KEY")))
-        // since we're consuming keycloak JWTs we need to locate the permission claims in the token
-        .setPermissionsClaimKey("realm_access/roles"))));
-
+                        .setAlgorithm("RS256")
+                        .setPublicKey(PUBLIC_KEY)))));
+    System.out.println("PUBLIC_KEY: " + PUBLIC_KEY);
     // This is how one can do RBAC, e.g.: only admin is allowed
     router.get("/api/greeting").handler(ctx ->
       ctx.user().isAuthorized("booster-admin", authz -> {
         if (authz.succeeded() && authz.result()) {
           ctx.next();
         } else {
-          log.error("AuthZ failed!");
+          System.err.println("AuthZ failed!");
           ctx.fail(403);
         }
       }));
+//    // Configure the AuthHandler to process JWT's
+//    router.route("/api/greeting").handler(JWTAuthHandler.create(
+//      JWTAuth.create(vertx, new JWTAuthOptions()
+//        .addPubSecKey(new PubSecKeyOptions()
+//          .setAlgorithm("RS256")
+//          .setPublicKey(System.getenv("REALM_PUBLIC_KEY")))
+//        // since we're consuming keycloak JWTs we need to locate the permission claims in the token
+//        .setPermissionsClaimKey("realm_access/roles"))));
+//
+//    // This is how one can do RBAC, e.g.: only admin is allowed
+//    router.get("/api/greeting").handler(ctx ->
+//      ctx.user().isAuthorized("booster-admin", authz -> {
+//        if (authz.succeeded() && authz.result()) {
+//          ctx.next();
+//        } else {
+//          log.error("AuthZ failed!");
+//          ctx.fail(403);
+//        }
+//      }));
 
     router.get("/api/greeting").handler(ctx -> {
       String name = ctx.request().getParam("name");
